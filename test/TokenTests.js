@@ -17,6 +17,7 @@ describe("[ Test The World of Tokens ]", function () {
     hre.tracer.nameTags[owner.address] = "Owner";
     hre.tracer.nameTags[attacker.address] = "Attacker";
 
+    // 01-BadTransfer Token
     this.badTransferToken = await (await ethers.getContractFactory("BadTransferToken", owner)).deploy("BadTransferToken", "BADTRNSFR");
     await this.badTransferToken.deployed();
     hre.tracer.nameTags[this.badTransferToken.address] = "BadTransferToken";
@@ -29,6 +30,21 @@ describe("[ Test The World of Tokens ]", function () {
     await this.badTransferToken.safeTransfer(this.rektContract.address, this.badTransferTokenInitFunds);
 
     this.rektContract = this.rektContract.connect(attacker);
+
+    // 02-Reentrant Token
+    this.rektContractReentrant = await (await ethers.getContractFactory("ContractRektByReentrant", owner)).deploy();
+    await this.rektContractReentrant.deployed();
+    hre.tracer.nameTags[this.rektContractReentrant.address] = "ContractRektByReentrant";
+
+    this.reentrantTokenInitFunds = eth('300');
+    this.reentrantToken = await (await ethers.getContractFactory("ReentrantToken",
+      owner)).deploy(this.reentrantTokenInitFunds);
+      // await ethers.getSigner(this.rektContractReentrant.address))).deploy(this.reentrantTokenInitFunds);
+    await this.reentrantToken.deployed();
+    hre.tracer.nameTags[this.reentrantToken.address] = "ReentrantToken";
+
+    await this.rektContractReentrant.assignToken(this.reentrantToken.address);
+    this.rektContractReentrant = this.rektContractReentrant.connect(attacker);
   });
 
 
@@ -38,16 +54,39 @@ describe("[ Test The World of Tokens ]", function () {
 
     console.log("\nRektContract balance before attack   : %s", await this.rektContract.getBadTokenBalanceOfContract());
     console.log("Attacker token balance before attack : %s\n", await this.badTransferToken.balanceOf(attacker.address));
-    
+
     await this.rektContract.play({ value: eth('1'), gasLimit: 4500000 });
-    
+
     console.log("\nRektContract balance after attack    : %s", await this.rektContract.getBadTokenBalanceOfContract());
     console.log("Attacker token balance after attack  : %s\n", await this.badTransferToken.balanceOf(attacker.address));
-    
+
     expect(await this.rektContract.getBadTokenBalanceOfContract(), "RektContract not fully drained!").to.eq(0);
-    expect(await this.badTransferToken.balanceOf(attacker.address), "Attacker's token balance still zero!").to.eq(this.badTransferTokenInitFunds);
+    expect(await this.badTransferToken.balanceOf(attacker.address), "Attacker's token balance less than expected!").to.eq(this.badTransferTokenInitFunds);
 
     console.log("\n=================  Test 01-BadTransfer_Token End  ==============================\n");
+
+  });
+
+  it("is rekt by a reentrant token -- 02-ReentrantToken", async function () {
+
+    console.log("\n================= Test 02-ReentrantToken Start ==============================\n");
+
+    attackerContract = await (await ethers.getContractFactory("AttackerContractReentrant", attacker))
+      .deploy(this.rektContractReentrant.address);
+    await attackerContract.deployed();
+
+    console.log("\nRektContract balance before attack   : %s", await this.rektContractReentrant.getTokenBalance());
+    console.log("Attacker token balance before attack : %s\n", await this.reentrantToken.balanceOf(attackerContract.address));
+
+    // await this.rektContractReentrant.play({ value: eth('1'), gasLimit: 4500000 });
+
+    console.log("\nRektContract balance after attack    : %s", await this.rektContractReentrant.getTokenBalance());
+    console.log("Attacker token balance after attack  : %s\n", await this.reentrantToken.balanceOf(attackerContract.address));
+
+    expect(await this.rektContractReentrant.getTokenBalance(), "ContractRektByReentrant not fully drained!").to.eq(0);
+    expect(await this.reentrantToken.balanceOf(attackerContract.address), "Attacker's token balance less than expected!").to.eq(this.reentrantTokenInitFunds);
+
+    console.log("\n=================  Test 02-ReentrantToken End  ==============================\n");
 
   });
 

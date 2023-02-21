@@ -35,15 +35,6 @@ describe("[ Test The World of Tokens ]", function () {
     this.rektContractReentrant = await (await ethers.getContractFactory("ContractRektByReentrant", owner)).deploy();
     await this.rektContractReentrant.deployed();
     hre.tracer.nameTags[this.rektContractReentrant.address] = "ContractRektByReentrant";
-
-    this.reentrantTokenInitFunds = eth('300');
-    this.reentrantToken = await (await ethers.getContractFactory("ReentrantToken",
-      owner)).deploy(this.reentrantTokenInitFunds);
-      // await ethers.getSigner(this.rektContractReentrant.address))).deploy(this.reentrantTokenInitFunds);
-    await this.reentrantToken.deployed();
-    hre.tracer.nameTags[this.reentrantToken.address] = "ReentrantToken";
-
-    await this.rektContractReentrant.assignToken(this.reentrantToken.address);
     this.rektContractReentrant = this.rektContractReentrant.connect(attacker);
   });
 
@@ -67,12 +58,24 @@ describe("[ Test The World of Tokens ]", function () {
 
   });
 
+
+  it("is able to create ERC777 token", async function () {
+
+    console.log("\n================= Test -- is able to create ERC777 token ==============================\n");
+
+    token = await (await ethers.getContractFactory("ReentrantToken", owner)).deploy(eth('200'));
+    console.log("owner balance: %s", await token.balanceOf(owner.address));
+
+    console.log("\n=================  Test -- is able to create ERC777 token  ==============================\n");
+
+  });
+  
   it("is rekt by a reentrant token -- 02-ReentrantToken", async function () {
 
     console.log("\n================= Test 02-ReentrantToken Start ==============================\n");
 
     attackerContract = await (await ethers.getContractFactory("AttackerContractReentrant", attacker))
-      .deploy(this.rektContractReentrant.address);
+      .deploy(this.rektContractReentrant.address, eth('300'));
     await attackerContract.deployed();
 
     console.log("\nRektContract balance before attack   : %s", await this.rektContractReentrant.getTokenBalance());

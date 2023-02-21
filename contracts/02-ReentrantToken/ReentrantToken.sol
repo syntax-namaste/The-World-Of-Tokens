@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 contract ReentrantToken is ERC777 {
     constructor(
         uint256 initialSupply
-    ) ERC777("ReentrantToken", "REENT", new address [](0)) {
+    ) ERC777("ReentrantToken", "REENT", new address[](0)) {
         console.log("sender ", msg.sender);
         _mint(msg.sender, initialSupply, "", "");
     }

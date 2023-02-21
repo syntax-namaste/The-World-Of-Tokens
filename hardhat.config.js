@@ -6,6 +6,5 @@ module.exports = {
     compilers: [
       { version: "0.8.4" }
     ]
-  },
-  gas: "auto"
+  }
 };
